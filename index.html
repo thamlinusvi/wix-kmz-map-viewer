@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>KMZ Viewer</title>
+  <title>UVI Glider Track Viewer</title>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
@@ -17,33 +17,42 @@
   <div id="map"></div>
 
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-  <script src="https://unpkg.com/leaflet-kmz/dist/leaflet-kmz.min.js"></script>
 
   <script>
-    const map = L.map('map').setView([18.3, -64.9], 10);
+    const map = L.map('map').setView([18.15, -64.9], 10);
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '© OpenStreetMap contributors'
     }).addTo(map);
 
-    // Fetch the KMZ file from Google Drive (direct download link)
-    fetch('https://drive.google.com/uc?export=download&id=17ZqHXxWmFiFB7_rnQ7SCnt6zZotqmw7C')
-      .then(res => {
-        if (!res.ok) throw new Error("Failed to fetch KMZ");
-        return res.arrayBuffer();
-      })
-      .then(kmzBuffer => {
-        const kmzLayer = new L.KMZLayer(kmzBuffer);
-        kmzLayer.on('loaded', () => {
-          map.addLayer(kmzLayer);
-          map.fitBounds(kmzLayer.getBounds());
-        });
+    // Load GeoJSON file
+    fetch('UVI2_TS_South_20250211-2.geojson')
+      .then(res => res.json())
+      .then(data => {
+        const geoLayer = L.geoJSON(data, {
+          pointToLayer: function (feature, latlng) {
+            return L.circleMarker(latlng, {
+              radius: 4,
+              fillColor: "#0077be",
+              color: "#000",
+              weight: 1,
+              opacity: 1,
+              fillOpacity: 0.8
+            });
+          },
+          onEachFeature: function (feature, layer) {
+            if (feature.properties && feature.properties.name) {
+              layer.bindPopup(feature.properties.name);
+            }
+          }
+        }).addTo(map);
+
+        map.fitBounds(geoLayer.getBounds());
       })
       .catch(err => {
-        console.error("KMZ load error:", err);
-        alert("Failed to load KMZ file. Check the file link and permissions.");
+        console.error("GeoJSON load error:", err);
+        alert("Failed to load glider track.");
       });
   </script>
 </body>
 </html>
-
