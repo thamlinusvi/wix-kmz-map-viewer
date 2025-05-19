@@ -6,7 +6,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
   <style>
-    #map { height: 100vh; }
+    html, body, #map {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+    }
   </style>
 </head>
 <body>
@@ -17,19 +21,29 @@
 
   <script>
     const map = L.map('map').setView([18.3, -64.9], 10);
+
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '© OpenStreetMap contributors'
     }).addTo(map);
 
-    fetch('UVI2_TS_South_20250211.zip')
-      .then(res => res.arrayBuffer())
-      .then(kmz => {
-        const kmzLayer = new L.KMZLayer(kmz);
+    // Fetch the KMZ file from Google Drive (direct download link)
+    fetch('https://drive.google.com/uc?export=download&id=17ZqHXxWmFiFB7_rnQ7SCnt6zZotqmw7C')
+      .then(res => {
+        if (!res.ok) throw new Error("Failed to fetch KMZ");
+        return res.arrayBuffer();
+      })
+      .then(kmzBuffer => {
+        const kmzLayer = new L.KMZLayer(kmzBuffer);
         kmzLayer.on('loaded', () => {
           map.addLayer(kmzLayer);
           map.fitBounds(kmzLayer.getBounds());
         });
+      })
+      .catch(err => {
+        console.error("KMZ load error:", err);
+        alert("Failed to load KMZ file. Check the file link and permissions.");
       });
   </script>
 </body>
 </html>
+
