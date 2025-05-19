@@ -21,7 +21,7 @@
       attribution: '© OpenStreetMap contributors'
     }).addTo(map);
 
-    fetch('UVI2_TS_South_20250211.kmz')
+    fetch('UVI2_TS_South_20250211.zip')
       .then(res => res.arrayBuffer())
       .then(kmz => {
         const kmzLayer = new L.KMZLayer(kmz);
