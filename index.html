@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>UVI Glider Track Viewer</title>
+  <title>Multi-Mission Glider Viewer</title>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
@@ -11,48 +11,96 @@
       margin: 0;
       padding: 0;
     }
+    #missionSelector {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      z-index: 1000;
+      background: white;
+      padding: 6px;
+      border-radius: 4px;
+      font-size: 14px;
+    }
   </style>
 </head>
 <body>
-  <div id="map"></div>
 
-  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<select id="missionSelector">
+  <option value="UVI2_TS_South_20250211">UVI2_TS_South_20250211</option>
+  <option value="UVI2_GMK_1</option>
+</select>
 
-  <script>
-    const map = L.map('map').setView([18.15, -64.9], 10);
+<div id="map"></div>
 
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© OpenStreetMap contributors'
-    }).addTo(map);
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 
-    // Load GeoJSON file
-    fetch('UVI2_TS_South_20250211-2.geojson')
+<script>
+  const map = L.map('map').setView([18.15, -64.9], 10);
+
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap contributors'
+  }).addTo(map);
+
+  let pointLayer = null;
+  let lineLayer = null;
+
+  function loadMission(missionName) {
+    const pointFile = `${missionName}_points.geojson`;
+    const lineFile = `${missionName}_track.geojson`;
+
+    // Remove old layers if they exist
+    if (pointLayer) {
+      map.removeLayer(pointLayer);
+    }
+    if (lineLayer) {
+      map.removeLayer(lineLayer);
+    }
+
+    // Load and add point layer
+    fetch(pointFile)
       .then(res => res.json())
       .then(data => {
-        const geoLayer = L.geoJSON(data, {
-          pointToLayer: function (feature, latlng) {
-            return L.circleMarker(latlng, {
-              radius: 4,
-              fillColor: "#0077be",
-              color: "#000",
-              weight: 1,
-              opacity: 1,
-              fillOpacity: 0.8
-            });
-          },
-          onEachFeature: function (feature, layer) {
+        pointLayer = L.geoJSON(data, {
+          pointToLayer: (feature, latlng) => L.circleMarker(latlng, {
+            radius: 4,
+            fillColor: "blue",
+            color: "#000",
+            weight: 1,
+            opacity: 1,
+            fillOpacity: 0.8
+          }),
+          onEachFeature: (feature, layer) => {
             if (feature.properties && feature.properties.name) {
               layer.bindPopup(feature.properties.name);
             }
           }
         }).addTo(map);
-
-        map.fitBounds(geoLayer.getBounds());
-      })
-      .catch(err => {
-        console.error("GeoJSON load error:", err);
-        alert("Failed to load glider track.");
+        map.fitBounds(pointLayer.getBounds());
       });
-  </script>
+
+    // Load and add line layer
+    fetch(lineFile)
+      .then(res => res.json())
+      .then(data => {
+        lineLayer = L.geoJSON(data, {
+          style: {
+            color: "red",
+            weight: 2,
+            opacity: 0.8
+          }
+        }).addTo(map);
+      });
+  }
+
+  // Handle mission switch
+  const selector = document.getElementById('missionSelector');
+  selector.addEventListener('change', (e) => {
+    loadMission(e.target.value);
+  });
+
+  // Initial load
+  loadMission(selector.value);
+</script>
+
 </body>
 </html>
