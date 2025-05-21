@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Preload ERDDAP Glider Tracks</title>
+  <style>
+    body {
+      font-family: monospace;
+      background: #111;
+      color: #0f0;
+      padding: 20px;
+    }
+    textarea {
+      width: 100%;
+      height: 600px;
+      margin-top: 20px;
+      font-family: monospace;
+    }
+  </style>
+</head>
+<body>
+  <h1>ERDDAP Preloader</h1>
+  <p>This will preload all mission tracks and generate JS for <code>preloadedData.js</code></p>
+
+  <button onclick="runPreloader()">Fetch & Build</button>
+
+  <textarea id="output" placeholder="Your preloadedData.js will appear here..."></textarea>
+
+  <script>
+    const ERDDAP_BASE = 'https://slocum-data.marine.rutgers.edu/erddap';
+    const datasetIds = [
+      "uvi_01-20230921T1324-trajectory-raw-delayed",
+      "uvi_01-20241026T1158-trajectory-raw-rt",
+      "uvi_01-20240828T1337-trajectory-raw-rt",
+      "uvi_01-20241004T1402-trajectory-raw-rt",
+      "uvi_01-20240809T1334-trajectory-raw-rt",
+      "uvi_01-20250318T2008-trajectory-raw-rt",
+      "uvi_02-20231102T1447-trajectory-raw-delayed",
+      "uvi_02-20241105T1313-trajectory-raw-rt",
+      "uvi_02-20250211T1347-trajectory-raw-rt",
+      "uvi_02-20250306T1911-trajectory-raw-rt"
+    ];
+
+    async function runPreloader() {
+      const output = document.getElementById('output');
+      output.value = '// Preloaded mission data for fast rendering\n';
+      output.value += 'window.preloadedMissions = {\n';
+
+      for (let i = 0; i < datasetIds.length; i++) {
+        const id = datasetIds[i];
+        const url = `${ERDDAP_BASE}/tabledap/${id}.geoJson?time,latitude,longitude&orderBy("time")`;
+
+        try {
+          const res = await fetch(url);
+          if (!res.ok) throw new Error(`Failed to load ${id}`);
+          const json = await res.json();
+
+          output.value += `"${id}": ${JSON.stringify(json)},\n`;
+          console.log(`✔ Loaded: ${id}`);
+        } catch (err) {
+          output.value += `"${id}": null,\n`;
+          console.warn(`✖ Failed: ${id}`);
+        }
+      }
+
+      output.value += '};\n';
+      alert('✅ Preloading complete! Copy the output into preloadedData.js');
+    }
+  </script>
+</body>
+</html>
