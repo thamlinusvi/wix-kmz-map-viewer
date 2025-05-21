@@ -50,10 +50,9 @@
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 
 <script>
-  const ERDDAP_BASE_URL = 'https://slocum-data.marine.rutgers.edu/erddap';
   const map = L.map('map').setView([18.3, -64.9], 9);
 
-  // Basemap
+  // Basemap: Esri Ocean
   L.tileLayer('https://services.arcgisonline.com/ArcGIS/rest/services/Ocean/World_Ocean_Base/MapServer/tile/{z}/{y}/{x}', {
     attribution: 'Basemap: Esri Ocean',
     maxZoom: 13
@@ -67,26 +66,16 @@
 
   let gliderTrackLayer = null;
 
-  // Timeout wrapper for fetch (default 45s)
-  function fetchWithTimeout(url, timeout = 45000) {
-    return Promise.race([
-      fetch(url),
-      new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Request timed out')), timeout)
-      )
-    ]);
-  }
-
-  function loadMissionFromERDDAP(datasetId) {
-    const erddapUrl = `${ERDDAP_BASE_URL}/tabledap/${datasetId}.geoJson?time,latitude,longitude&orderBy(%22time%22)`;
+  function loadMissionFromLocal(datasetId) {
+    const filePath = `data/${datasetId}.geojson`;
 
     if (gliderTrackLayer) {
       map.removeLayer(gliderTrackLayer);
     }
 
-    fetchWithTimeout(erddapUrl)
+    fetch(filePath)
       .then(res => {
-        if (!res.ok) throw new Error('Failed to load data');
+        if (!res.ok) throw new Error('File not found');
         return res.json();
       })
       .then(data => {
@@ -106,7 +95,7 @@
       })
       .catch(err => {
         console.error(err);
-        alert("Unable to load mission data from ERDDAP. " + err.message);
+        alert("Unable to load local mission data. " + err.message);
       });
   }
 
@@ -115,15 +104,14 @@
 
   if (firstEnabledOption) {
     selector.value = firstEnabledOption.value;
-    loadMissionFromERDDAP(firstEnabledOption.value);
+    loadMissionFromLocal(firstEnabledOption.value);
   }
 
   selector.addEventListener('change', () => {
-    loadMissionFromERDDAP(selector.value);
+    loadMissionFromLocal(selector.value);
   });
 </script>
 
 </body>
 </html>
-
 
