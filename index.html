@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Multi-Mission Glider Viewer</title>
+  <title>UVI Glider Viewer – Historical & Live Missions</title>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
@@ -27,8 +27,25 @@
 <body>
 
 <select id="missionSelector">
-  <option value="UVI2_TS_South_20250211">UVI2_TS_South_20250211</option>
-  <option value="UVI2_GMK_1">UVI2_GMK_1</option>
+  <optgroup label="🔴 Live Missions">
+    <option disabled selected>No active missions</option>
+    <!-- Example to add later:
+    <option value="uvi_01-20250601T1200-trajectory-raw-rt">UVI1_New_Live_Mission</option>
+    -->
+  </optgroup>
+
+  <optgroup label="📦 Historical Missions">
+    <option value="uvi_01-20230921T1324-trajectory-raw-delayed">UVI1_AD2CP_102523</option>
+    <option value="uvi_01-20241026T1158-trajectory-raw-rt">UVI1_PR_E_Northside_1</option>
+    <option value="uvi_01-20240828T1337-trajectory-raw-rt">UVI1_PR_E_Southside_1</option>
+    <option value="uvi_01-20241004T1402-trajectory-raw-rt">UVI1_PR_W_Northside_1</option>
+    <option value="uvi_01-20240809T1334-trajectory-raw-rt">UVI1_PR_W_Southside_1</option>
+    <option value="uvi_01-20250318T2008-trajectory-raw-rt">UVI1_TS_STX_Gram_03182025</option>
+    <option value="uvi_02-20231102T1447-trajectory-raw-delayed">UVI2_ADCP_112523</option>
+    <option value="uvi_02-20241105T1313-trajectory-raw-rt">UVI2_GMK_1</option>
+    <option value="uvi_02-20250211T1347-trajectory-raw-rt">UVI2_TS_South_20250211</option>
+    <option value="uvi_02-20250306T1911-trajectory-raw-rt">UVI2_Around_STX_20250306</option>
+  </optgroup>
 </select>
 
 <div id="map"></div>
@@ -36,72 +53,72 @@
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 
 <script>
-  const map = L.map('map').setView([18.15, -64.9], 10);
+  const ERDDAP_BASE_URL = 'https://slocum-data.marine.rutgers.edu/erddap';
 
-  // 🌊 Esri Ocean Base Map
+  const map = L.map('map').setView([18.3, -64.9], 9);
+
+  // Esri Ocean Basemap
   L.tileLayer('https://services.arcgisonline.com/ArcGIS/rest/services/Ocean/World_Ocean_Base/MapServer/tile/{z}/{y}/{x}', {
     attribution: 'Basemap: Esri Ocean',
     maxZoom: 13
   }).addTo(map);
 
-  // 🏷️ Esri Ocean Reference Labels (optional)
+  // Optional: Esri labels
   L.tileLayer('https://services.arcgisonline.com/ArcGIS/rest/services/Ocean/World_Ocean_Reference/MapServer/tile/{z}/{y}/{x}', {
     attribution: 'Labels: Esri',
-    maxZoom: 13,
-    pane: 'overlayPane'
+    maxZoom: 13
   }).addTo(map);
 
-  let pointLayer = null;
-  let lineLayer = null;
+  let gliderTrackLayer = null;
 
-  function loadMission(missionName) {
-    const pointFile = `${missionName}_points.geojson`;
-    const lineFile = `${missionName}_track.geojson`;
+  function loadMissionFromERDDAP(datasetId) {
+    const erddapUrl = `${ERDDAP_BASE_URL}/tabledap/${datasetId}.geoJson?time,latitude,longitude&orderBy(%22time%22)`;
 
-    if (pointLayer) map.removeLayer(pointLayer);
-    if (lineLayer) map.removeLayer(lineLayer);
+    if (gliderTrackLayer) {
+      map.removeLayer(gliderTrackLayer);
+    }
 
-    fetch(pointFile)
-      .then(res => res.json())
+    fetch(erddapUrl)
+      .then(res => {
+        if (!res.ok) throw new Error('Failed to load data');
+        return res.json();
+      })
       .then(data => {
-        pointLayer = L.geoJSON(data, {
-          pointToLayer: (feature, latlng) => L.circleMarker(latlng, {
-            radius: 4,
-            fillColor: "blue",
-            color: "#000",
-            weight: 1,
-            opacity: 1,
-            fillOpacity: 0.8
-          }),
-          onEachFeature: (feature, layer) => {
-            if (feature.properties?.name) {
-              layer.bindPopup(feature.properties.name);
-            }
-          }
-        }).addTo(map);
-        map.fitBounds(pointLayer.getBounds());
-      });
-
-    fetch(lineFile)
-      .then(res => res.json())
-      .then(data => {
-        lineLayer = L.geoJSON(data, {
+        gliderTrackLayer = L.geoJSON(data, {
           style: {
-            color: "red",
+            color: 'orange',
             weight: 2,
-            opacity: 0.8
+            opacity: 0.9
+          },
+          onEachFeature: (feature, layer) => {
+            const t = feature.properties?.time;
+            if (t) layer.bindPopup(`Time: ${t}`);
           }
         }).addTo(map);
+
+        map.fitBounds(gliderTrackLayer.getBounds());
+      })
+      .catch(err => {
+        console.error(err);
+        alert("Unable to load mission data from ERDDAP.");
       });
   }
 
-  document.getElementById('missionSelector').addEventListener('change', (e) => {
-    loadMission(e.target.value);
-  });
+  const selector = document.getElementById('missionSelector');
 
-  loadMission(document.getElementById('missionSelector').value);
+  // Automatically select and load the first enabled (non-placeholder) option
+  const firstEnabledOption = Array.from(selector.options).find(opt => !opt.disabled);
+  if (firstEnabledOption) {
+    selector.value = firstEnabledOption.value;
+    loadMissionFromERDDAP(firstEnabledOption.value);
+  }
+
+  selector.addEventListener('change', () => {
+    loadMissionFromERDDAP(selector.value);
+  });
 </script>
 
 </body>
 </html>
+
 
