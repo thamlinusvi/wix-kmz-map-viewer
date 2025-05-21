@@ -39,11 +39,11 @@
   const map = L.map('map').setView([18.15, -64.9], 10);
 
   // GEBCO Bathymetry only (no OSM)
-  L.tileLayer.wms('https://gis.ngdc.noaa.gov/arcgis/services/web_mercator/gebco_2022_hillshade/MapServer/WMSServer', {
-    layers: '0',
+  L.tileLayer.wms('https://wms.gebco.net/2023/mapserv?', {
+    layers: 'GEBCO_2023_Grid',
     format: 'image/png',
     transparent: false,  // now it's your full background
-    attribution: 'Bathymetry: GEBCO via NOAA',
+    attribution: 'Bathymetry: GEBCO 2023',
     opacity: 1
   }).addTo(map);
 
