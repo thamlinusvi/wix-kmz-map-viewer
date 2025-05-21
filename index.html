@@ -10,7 +10,7 @@
       height: 100%;
       margin: 0;
       padding: 0;
-      background: #001f33; /* ocean background for when tiles don't fully load */
+      background: #001f33; /* fallback ocean background */
     }
     #missionSelector {
       position: absolute;
@@ -38,13 +38,10 @@
 <script>
   const map = L.map('map').setView([18.15, -64.9], 10);
 
-  // GEBCO Bathymetry only (no OSM)
-  L.tileLayer.wms('https://wms.gebco.net/2023/mapserv?', {
-    layers: 'GEBCO_2023_Grid',
-    format: 'image/png',
-    transparent: false,  // now it's your full background
-    attribution: 'Bathymetry: GEBCO 2023',
-    opacity: 1
+  // Dark terrain-style basemap from Stadia
+  L.tileLayer('https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png', {
+    attribution: '&copy; Stadia Maps, OpenMapTiles, OpenStreetMap contributors',
+    maxZoom: 18
   }).addTo(map);
 
   let pointLayer = null;
@@ -54,11 +51,9 @@
     const pointFile = `${missionName}_points.geojson`;
     const lineFile = `${missionName}_track.geojson`;
 
-    // Remove old layers
     if (pointLayer) map.removeLayer(pointLayer);
     if (lineLayer) map.removeLayer(lineLayer);
 
-    // Add points
     fetch(pointFile)
       .then(res => res.json())
       .then(data => {
@@ -80,7 +75,6 @@
         map.fitBounds(pointLayer.getBounds());
       });
 
-    // Add line
     fetch(lineFile)
       .then(res => res.json())
       .then(data => {
@@ -98,10 +92,8 @@
     loadMission(e.target.value);
   });
 
-  // Load initial mission
   loadMission(document.getElementById('missionSelector').value);
 </script>
 
 </body>
 </html>
-
