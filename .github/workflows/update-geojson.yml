@@ -1,0 +1,32 @@
+name: Update ERDDAP GeoJSON
+
+on:
+  schedule:
+    - cron: '30 4 * * *'  # 12:30 AM AST / 4:30 AM UTC
+  workflow_dispatch:      # Optional manual run
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install Python dependencies
+        run: pip install -r scripts/requirements.txt
+
+      - name: Run ERDDAP fetch script
+        run: python scripts/erddap_fetch.py
+
+      - name: Commit and push updated GeoJSON
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@users.noreply.github.com"
+          git add data/*.geojson
+          git commit -m "🔄 Auto-update GeoJSON from ERDDAP" || echo "No changes to commit"
+          git push
