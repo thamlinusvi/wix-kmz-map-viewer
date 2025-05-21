@@ -1,8 +1,6 @@
-#!/usr/bin/env python3
-# File: scripts/erddap_fetch.py
-
 import os
 import json
+import requests
 from erddapy import ERDDAP
 
 DATASETS = [
@@ -24,17 +22,19 @@ def fetch_and_save(dataset_id):
         server="https://slocum-data.marine.rutgers.edu/erddap",
         protocol="tabledap",
     )
-
     e.dataset_id = dataset_id
     e.response = "geoJson"
     e.variables = ["time", "latitude", "longitude"]
     e.order_by = ["time"]
 
     try:
-        geojson = e.to_geojson()
-        output_dir = "data"
-        os.makedirs(output_dir, exist_ok=True)
-        with open(f"{output_dir}/{dataset_id}.geojson", "w") as f:
+        url = e.get_download_url()
+        r = requests.get(url, timeout=60)
+        r.raise_for_status()
+        geojson = r.json()
+
+        os.makedirs("data", exist_ok=True)
+        with open(f"data/{dataset_id}.geojson", "w") as f:
             json.dump(geojson, f)
         print(f"✔ Saved {dataset_id}.geojson")
     except Exception as ex:
