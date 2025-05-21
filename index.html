@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>UVI Glider Viewer – Historical & Live Missions</title>
+  <title>UVI Glider Viewer – Historical Missions</title>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
@@ -29,9 +29,6 @@
 <select id="missionSelector">
   <optgroup label="🔴 Live Missions">
     <option disabled selected>No active missions</option>
-    <!-- Example to add later:
-    <option value="uvi_01-20250601T1200-trajectory-raw-rt">UVI1_New_Live_Mission</option>
-    -->
   </optgroup>
 
   <optgroup label="📦 Historical Missions">
@@ -54,22 +51,31 @@
 
 <script>
   const ERDDAP_BASE_URL = 'https://slocum-data.marine.rutgers.edu/erddap';
-
   const map = L.map('map').setView([18.3, -64.9], 9);
 
-  // Esri Ocean Basemap
+  // Basemap
   L.tileLayer('https://services.arcgisonline.com/ArcGIS/rest/services/Ocean/World_Ocean_Base/MapServer/tile/{z}/{y}/{x}', {
     attribution: 'Basemap: Esri Ocean',
     maxZoom: 13
   }).addTo(map);
 
-  // Optional: Esri labels
+  // Optional labels
   L.tileLayer('https://services.arcgisonline.com/ArcGIS/rest/services/Ocean/World_Ocean_Reference/MapServer/tile/{z}/{y}/{x}', {
     attribution: 'Labels: Esri',
     maxZoom: 13
   }).addTo(map);
 
   let gliderTrackLayer = null;
+
+  // Timeout wrapper for fetch (default 15s)
+  function fetchWithTimeout(url, timeout = 15000) {
+    return Promise.race([
+      fetch(url),
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Request timed out')), timeout)
+      )
+    ]);
+  }
 
   function loadMissionFromERDDAP(datasetId) {
     const erddapUrl = `${ERDDAP_BASE_URL}/tabledap/${datasetId}.geoJson?time,latitude,longitude&orderBy(%22time%22)`;
@@ -78,7 +84,7 @@
       map.removeLayer(gliderTrackLayer);
     }
 
-    fetch(erddapUrl)
+    fetchWithTimeout(erddapUrl)
       .then(res => {
         if (!res.ok) throw new Error('Failed to load data');
         return res.json();
@@ -100,14 +106,13 @@
       })
       .catch(err => {
         console.error(err);
-        alert("Unable to load mission data from ERDDAP.");
+        alert("Unable to load mission data from ERDDAP. " + err.message);
       });
   }
 
   const selector = document.getElementById('missionSelector');
-
-  // Automatically select and load the first enabled (non-placeholder) option
   const firstEnabledOption = Array.from(selector.options).find(opt => !opt.disabled);
+
   if (firstEnabledOption) {
     selector.value = firstEnabledOption.value;
     loadMissionFromERDDAP(firstEnabledOption.value);
