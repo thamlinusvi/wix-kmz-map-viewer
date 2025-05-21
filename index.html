@@ -10,7 +10,7 @@
       height: 100%;
       margin: 0;
       padding: 0;
-      background: #001f33; /* fallback ocean background */
+      background: #001f33;
     }
     #missionSelector {
       position: absolute;
@@ -38,10 +38,17 @@
 <script>
   const map = L.map('map').setView([18.15, -64.9], 10);
 
-  // Dark terrain-style basemap from Stadia
-  L.tileLayer('https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png', {
-    attribution: '&copy; Stadia Maps, OpenMapTiles, OpenStreetMap contributors',
-    maxZoom: 18
+  // 🌊 Esri Ocean Base Map
+  L.tileLayer('https://services.arcgisonline.com/ArcGIS/rest/services/Ocean/World_Ocean_Base/MapServer/tile/{z}/{y}/{x}', {
+    attribution: 'Basemap: Esri Ocean',
+    maxZoom: 13
+  }).addTo(map);
+
+  // 🏷️ Esri Ocean Reference Labels (optional)
+  L.tileLayer('https://services.arcgisonline.com/ArcGIS/rest/services/Ocean/World_Ocean_Reference/MapServer/tile/{z}/{y}/{x}', {
+    attribution: 'Labels: Esri',
+    maxZoom: 13,
+    pane: 'overlayPane'
   }).addTo(map);
 
   let pointLayer = null;
@@ -49,51 +56,5 @@
 
   function loadMission(missionName) {
     const pointFile = `${missionName}_points.geojson`;
-    const lineFile = `${missionName}_track.geojson`;
+    const lineFile = `${missionName}_track_
 
-    if (pointLayer) map.removeLayer(pointLayer);
-    if (lineLayer) map.removeLayer(lineLayer);
-
-    fetch(pointFile)
-      .then(res => res.json())
-      .then(data => {
-        pointLayer = L.geoJSON(data, {
-          pointToLayer: (feature, latlng) => L.circleMarker(latlng, {
-            radius: 4,
-            fillColor: "blue",
-            color: "#000",
-            weight: 1,
-            opacity: 1,
-            fillOpacity: 0.8
-          }),
-          onEachFeature: (feature, layer) => {
-            if (feature.properties?.name) {
-              layer.bindPopup(feature.properties.name);
-            }
-          }
-        }).addTo(map);
-        map.fitBounds(pointLayer.getBounds());
-      });
-
-    fetch(lineFile)
-      .then(res => res.json())
-      .then(data => {
-        lineLayer = L.geoJSON(data, {
-          style: {
-            color: "red",
-            weight: 2,
-            opacity: 0.8
-          }
-        }).addTo(map);
-      });
-  }
-
-  document.getElementById('missionSelector').addEventListener('change', (e) => {
-    loadMission(e.target.value);
-  });
-
-  loadMission(document.getElementById('missionSelector').value);
-</script>
-
-</body>
-</html>
