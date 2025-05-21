@@ -67,8 +67,8 @@
 
   let gliderTrackLayer = null;
 
-  // Timeout wrapper for fetch (default 15s)
-  function fetchWithTimeout(url, timeout = 15000) {
+  // Timeout wrapper for fetch (default 45s)
+  function fetchWithTimeout(url, timeout = 45000) {
     return Promise.race([
       fetch(url),
       new Promise((_, reject) =>
