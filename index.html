@@ -43,11 +43,11 @@
   }).addTo(map);
 
   // Bathymetry layer (GEBCO WMS)
-  L.tileLayer.wms('https://www.gebco.net/data_and_products/gebco_web_services/web_map_service/mapserv?', {
-    layers: 'GEBCO_LATEST',
+  L.tileLayer.wms('https://gis.ngdc.noaa.gov/arcgis/services/web_mercator/gebco_2022_hillshade/MapServer/WMSServer', {
+    layers: '0',
     format: 'image/png',
     transparent: true,
-    attribution: 'Bathymetry: GEBCO',
+    attribution: 'Bathymetry: GEBCO via NOAA',
     opacity: 0.5
   }).addTo(map);
 
