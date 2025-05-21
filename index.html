@@ -10,6 +10,7 @@
       height: 100%;
       margin: 0;
       padding: 0;
+      background: #001f33; /* ocean background for when tiles don't fully load */
     }
     #missionSelector {
       position: absolute;
@@ -37,18 +38,13 @@
 <script>
   const map = L.map('map').setView([18.15, -64.9], 10);
 
-  // Base map layer
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '© OpenStreetMap contributors'
-  }).addTo(map);
-
-  // Bathymetry layer (GEBCO WMS)
+  // GEBCO Bathymetry only (no OSM)
   L.tileLayer.wms('https://gis.ngdc.noaa.gov/arcgis/services/web_mercator/gebco_2022_hillshade/MapServer/WMSServer', {
     layers: '0',
     format: 'image/png',
-    transparent: true,
+    transparent: false,  // now it's your full background
     attribution: 'Bathymetry: GEBCO via NOAA',
-    opacity: 0.5
+    opacity: 1
   }).addTo(map);
 
   let pointLayer = null;
@@ -58,15 +54,11 @@
     const pointFile = `${missionName}_points.geojson`;
     const lineFile = `${missionName}_track.geojson`;
 
-    // Remove old layers if they exist
-    if (pointLayer) {
-      map.removeLayer(pointLayer);
-    }
-    if (lineLayer) {
-      map.removeLayer(lineLayer);
-    }
+    // Remove old layers
+    if (pointLayer) map.removeLayer(pointLayer);
+    if (lineLayer) map.removeLayer(lineLayer);
 
-    // Load point layer
+    // Add points
     fetch(pointFile)
       .then(res => res.json())
       .then(data => {
@@ -80,7 +72,7 @@
             fillOpacity: 0.8
           }),
           onEachFeature: (feature, layer) => {
-            if (feature.properties && feature.properties.name) {
+            if (feature.properties?.name) {
               layer.bindPopup(feature.properties.name);
             }
           }
@@ -88,7 +80,7 @@
         map.fitBounds(pointLayer.getBounds());
       });
 
-    // Load line layer
+    // Add line
     fetch(lineFile)
       .then(res => res.json())
       .then(data => {
@@ -102,15 +94,14 @@
       });
   }
 
-  // Handle dropdown mission switch
-  const selector = document.getElementById('missionSelector');
-  selector.addEventListener('change', (e) => {
+  document.getElementById('missionSelector').addEventListener('change', (e) => {
     loadMission(e.target.value);
   });
 
-  // Initial load
-  loadMission(selector.value);
+  // Load initial mission
+  loadMission(document.getElementById('missionSelector').value);
 </script>
 
 </body>
 </html>
+
